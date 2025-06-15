@@ -149,6 +149,11 @@ public final class PerformanceMonitor {
         }
     }
     
+    /// Возвращает путь к папке Documents, где создаются отчеты
+    public var reportsPath: String {
+        return reportGenerator.documentsPath
+    }
+    
     // MARK: - Private Methods
     
     private func setupDelegates() {

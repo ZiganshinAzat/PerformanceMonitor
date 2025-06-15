@@ -13,13 +13,12 @@ final class ReportGenerator {
         return fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
     }()
     
-    private lazy var reportsDirectory: URL = {
-        let url = documentsDirectory.appendingPathComponent("PerformanceReports")
-        try? fileManager.createDirectory(at: url, withIntermediateDirectories: true)
-        return url
-    }()
-    
     // MARK: - Public Methods
+    
+    /// Возвращает путь к папке Documents, где создаются отчеты
+    public var documentsPath: String {
+        return documentsDirectory.path
+    }
     
     /// Генерирует отчеты в указанных форматах
     /// - Parameters:
@@ -34,12 +33,11 @@ final class ReportGenerator {
     ) throws -> [URL] {
         var generatedURLs: [URL] = []
         
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         let timestamp = DateFormatter.filenameDateFormatter.string(from: Date())
         
         for format in formats {
             let filename = "performance_report_\(timestamp).\(format.rawValue)"
-            let url = documentsPath.appendingPathComponent(filename)
+            let url = documentsDirectory.appendingPathComponent(filename)
             
             switch format {
             case .json:
@@ -51,8 +49,11 @@ final class ReportGenerator {
             }
             
             generatedURLs.append(url)
+            print("📄 Отчет создан: \(url.lastPathComponent)")
+            print("📁 Путь: \(url.path)")
         }
         
+        print("✅ Все отчеты созданы в папке Documents: \(documentsDirectory.path)")
         return generatedURLs
     }
     
