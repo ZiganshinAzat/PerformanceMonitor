@@ -1,5 +1,5 @@
 import XCTest
-@testable import PerfomanceMonitor
+@testable import PerformanceMonitor
 
 final class PerfomanceMonitorTests: XCTestCase {
     

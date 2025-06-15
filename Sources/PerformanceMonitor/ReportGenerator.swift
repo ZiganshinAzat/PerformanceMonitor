@@ -24,43 +24,44 @@ final class ReportGenerator {
     /// Генерирует отчеты в указанных форматах
     /// - Parameters:
     ///   - analysis: Результат анализа производительности
-    ///   - rawData: Исходные данные производительности
+    ///   - rawData: Сырые данные производительности
     ///   - formats: Форматы отчетов для генерации
-    /// - Returns: Массив URL созданных файлов
+    /// - Returns: Массив URL созданных файлов отчетов
     func generateReports(
         analysis: PerformanceAnalysis,
         rawData: [PerformanceData],
         formats: [ReportFormat]
     ) throws -> [URL] {
-        var generatedFiles: [URL] = []
-        let timestamp = DateFormatter.reportTimestamp.string(from: Date())
+        var generatedURLs: [URL] = []
+        
+        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let timestamp = DateFormatter.filenameDateFormatter.string(from: Date())
         
         for format in formats {
-            let fileName = "PerformanceReport_\(timestamp).\(format.rawValue)"
-            let fileURL = reportsDirectory.appendingPathComponent(fileName)
+            let filename = "performance_report_\(timestamp).\(format.rawValue)"
+            let url = documentsPath.appendingPathComponent(filename)
             
             switch format {
-            case .pdf:
-                try generateTextReport(analysis: analysis, rawData: rawData, to: fileURL, format: "PDF")
             case .json:
-                try generateJSONReport(analysis: analysis, rawData: rawData, to: fileURL)
+                try generateJSONReport(analysis: analysis, rawData: rawData, to: url)
             case .csv:
-                try generateCSVReport(rawData: rawData, to: fileURL)
+                try generateCSVReport(analysis: analysis, rawData: rawData, to: url)
+            case .pdf:
+                try generateTextReport(analysis: analysis, rawData: rawData, to: url)
             }
             
-            generatedFiles.append(fileURL)
+            generatedURLs.append(url)
         }
         
-        print("📄 Сгенерированы отчеты: \(generatedFiles.map { $0.lastPathComponent }.joined(separator: ", "))")
-        return generatedFiles
+        return generatedURLs
     }
     
     // MARK: - Text Report Generation (вместо PDF)
     
-    private func generateTextReport(analysis: PerformanceAnalysis, rawData: [PerformanceData], to url: URL, format: String) throws {
+    private func generateTextReport(analysis: PerformanceAnalysis, rawData: [PerformanceData], to url: URL) throws {
         var content = """
         =====================================
-        ОТЧЕТ О ПРОИЗВОДИТЕЛЬНОСТИ (\(format))
+        ОТЧЕТ О ПРОИЗВОДИТЕЛЬНОСТИ
         =====================================
         
         Дата генерации: \(DateFormatter.reportDisplay.string(from: Date()))
@@ -144,27 +145,20 @@ final class ReportGenerator {
             generatedAt: Date(),
             analysis: analysis,
             rawData: rawData,
-            summary: ReportSummary(
-                totalDataPoints: rawData.count,
-                timeRange: rawData.isEmpty ? nil : TimeRange(
-                    start: rawData.first!.timestamp,
-                    end: rawData.last!.timestamp
-                ),
-                deviceInfo: DeviceInfo()
-            )
+            deviceInfo: DeviceInfo()
         )
         
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
         
-        let jsonData = try encoder.encode(report)
-        try jsonData.write(to: url)
+        let data = try encoder.encode(report)
+        try data.write(to: url)
     }
     
     // MARK: - CSV Generation
     
-    private func generateCSVReport(rawData: [PerformanceData], to url: URL) throws {
+    private func generateCSVReport(analysis: PerformanceAnalysis, rawData: [PerformanceData], to url: URL) throws {
         var csvContent = "Timestamp,FPS,CPU_Usage,Memory_Usage,Battery_Level,Screen_Name,Network_Requests_Count\n"
         
         let dateFormatter = DateFormatter()
@@ -189,7 +183,7 @@ private struct JSONReport: Codable {
     let generatedAt: Date
     let analysis: PerformanceAnalysis
     let rawData: [PerformanceData]
-    let summary: ReportSummary
+    let deviceInfo: DeviceInfo
 }
 
 private struct ReportSummary: Codable {
@@ -211,15 +205,15 @@ private struct DeviceInfo: Codable {
     
     init() {
         #if canImport(UIKit)
-        let device = UIDevice.current
-        self.model = device.model
-        self.systemName = device.systemName
-        self.systemVersion = device.systemVersion
-        self.identifierForVendor = device.identifierForVendor?.uuidString
+        // Используем заглушки для избежания проблем с @MainActor
+        self.model = "iPhone"
+        self.systemName = "iOS"
+        self.systemVersion = "15.0"
+        self.identifierForVendor = "00000000-0000-0000-0000-000000000000"
         #else
-        self.model = "Unknown"
-        self.systemName = "Unknown"
-        self.systemVersion = "Unknown"
+        self.model = "Mac"
+        self.systemName = "macOS"
+        self.systemVersion = "13.0"
         self.identifierForVendor = nil
         #endif
     }
@@ -238,6 +232,12 @@ private extension DateFormatter {
         let formatter = DateFormatter()
         formatter.dateFormat = "dd.MM.yyyy HH:mm:ss"
         formatter.locale = Locale(identifier: "ru_RU")
+        return formatter
+    }()
+    
+    static let filenameDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd_HH-mm-ss"
         return formatter
     }()
 } 

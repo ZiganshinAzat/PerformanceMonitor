@@ -32,7 +32,7 @@ public struct PerformanceData: Codable {
 }
 
 /// Данные сетевого запроса
-public struct NetworkRequestData: Codable, Sendable {
+public struct NetworkRequestData: Codable {
     public let url: String
     public let method: String
     public let statusCode: Int?
@@ -152,7 +152,7 @@ public struct ScreenPerformance: Codable {
 }
 
 /// Конфигурация пороговых значений
-public struct PerformanceThresholds: Sendable {
+public struct PerformanceThresholds {
     public let minFPS: Double
     public let maxCPU: Double
     public let maxMemory: Double

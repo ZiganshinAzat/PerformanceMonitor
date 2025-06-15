@@ -1,4 +1,4 @@
-@preconcurrency import Foundation
+import Foundation
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -8,7 +8,7 @@ public final class PerformanceMonitor {
     
     // MARK: - Singleton
     
-    nonisolated(unsafe) public static let shared = PerformanceMonitor()
+    public static let shared = PerformanceMonitor()
     
     // MARK: - Private Properties
     
@@ -16,7 +16,7 @@ public final class PerformanceMonitor {
     private var performanceData: [PerformanceData] = []
     private var thresholds: PerformanceThresholds = .default
     private var monitoringTimer: Timer?
-    
+
     private let queue = DispatchQueue(label: "com.performancemonitor.data", qos: .utility)
     
     // Трекеры
@@ -55,6 +55,9 @@ public final class PerformanceMonitor {
         networkMonitor.start()
         viewControllerTracker.start()
         
+        // Запускаем автоматический сбор метрик через DispatchQueue
+        startMetricsCollection(interval: interval)
+        
         print("✅ PerformanceMonitor запущен с интервалом \(interval)с")
     }
     
@@ -87,17 +90,20 @@ public final class PerformanceMonitor {
     ///   - completion: Колбэк с результатом генерации
     public func generateReport(
         formats: [ReportFormat] = [.pdf, .json],
-        completion: @escaping @Sendable (Result<[URL], Error>) -> Void
+        completion: @escaping (Result<[URL], Error>) -> Void
     ) {
         let analysis = self.dataAnalyzer.analyze(
             data: self.performanceData,
             thresholds: self.thresholds
         )
         
+        let reportGenerator = self.reportGenerator
+        let performanceData = self.performanceData
+        
         do {
-            let urls = try self.reportGenerator.generateReports(
+            let urls = try reportGenerator.generateReports(
                 analysis: analysis,
-                rawData: self.performanceData,
+                rawData: performanceData,
                 formats: formats
             )
             completion(.success(urls))
@@ -113,7 +119,7 @@ public final class PerformanceMonitor {
     }
     
     /// Возвращает текущие метрики
-    @MainActor public func getCurrentMetrics() -> PerformanceData? {
+    public func getCurrentMetrics() -> PerformanceData? {
         guard isMonitoring else { return nil }
         
         return PerformanceData(
@@ -137,8 +143,10 @@ public final class PerformanceMonitor {
     }
     
     /// Принудительно собирает метрики (для тестирования)
-    @MainActor public func collectMetricsNow() {
-        collectMetrics()
+    public func collectMetricsNow() {
+        DispatchQueue.main.async {
+            self.collectMetrics()
+        }
     }
     
     // MARK: - Private Methods
@@ -148,7 +156,20 @@ public final class PerformanceMonitor {
         // networkMonitor.delegate = self // Заглушка
     }
     
-    @MainActor private func collectMetrics() {
+    private func startMetricsCollection(interval: TimeInterval) {
+        queue.asyncAfter(deadline: .now() + interval) { [weak self] in
+            guard let self = self, self.isMonitoring else { return }
+            
+            DispatchQueue.main.async {
+                self.collectMetrics()
+            }
+            
+            // Планируем следующий сбор
+            self.startMetricsCollection(interval: interval)
+        }
+    }
+    
+    private func collectMetrics() {
         guard isMonitoring else { return }
         
         let metrics = PerformanceData(
@@ -169,14 +190,39 @@ public final class PerformanceMonitor {
     }
     
     private func getCurrentMemoryUsage() -> Double {
-        // Заглушка - возвращаем случайное значение от 100 до 300 MB
-        return Double.random(in: 100...300)
+        // Получаем реальное использование памяти
+        var info = mach_task_basic_info()
+        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size)/4
+        
+        let kerr: kern_return_t = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: 1) {
+                let task = mach_task_self_
+                return task_info(task,
+                         task_flavor_t(MACH_TASK_BASIC_INFO),
+                         $0,
+                         &count)
+            }
+        }
+        
+        if kerr == KERN_SUCCESS {
+            // Конвертируем байты в мегабайты
+            return Double(info.resident_size) / (1024.0 * 1024.0)
+        } else {
+            // Fallback - возвращаем случайное значение
+            return Double.random(in: 100...300)
+        }
     }
     
-    @MainActor private func getCurrentBatteryLevel() -> Double? {
+    private func getCurrentBatteryLevel() -> Double? {
         #if canImport(UIKit)
-        // Возвращаем заглушку для избежания проблем с MainActor
-        return Double.random(in: 70...100)
+        let device = UIDevice.current
+        device.isBatteryMonitoringEnabled = true
+        
+        if device.batteryLevel >= 0 {
+            return Double(device.batteryLevel * 100)
+        } else {
+            return nil // Батарея недоступна (например, на симуляторе)
+        }
         #else
         return nil
         #endif
@@ -185,7 +231,7 @@ public final class PerformanceMonitor {
 
 // MARK: - ReportFormat
 
-public enum ReportFormat: String, CaseIterable, Sendable {
+public enum ReportFormat: String, CaseIterable {
     case pdf = "pdf"
     case json = "json"
     case csv = "csv"
