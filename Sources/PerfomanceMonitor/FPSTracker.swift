@@ -9,13 +9,9 @@ final class FPSTracker {
     // MARK: - Properties
     
     private var fps: Double = 60.0
-    
-    #if canImport(UIKit) && !targetEnvironment(macCatalyst)
-    @available(iOS 15.0, *)
-    private var displayLink: CADisplayLink?
+    private var displayLink: AnyObject?
     private var lastTimestamp: CFTimeInterval = 0
     private var frameCount: Int = 0
-    #endif
     
     // MARK: - Public Properties
     
@@ -49,8 +45,9 @@ final class FPSTracker {
                 return
             }
             
-            displayLink = CADisplayLink(target: self, selector: #selector(displayLinkTick(_:)))
-            displayLink?.add(to: .main, forMode: .common)
+            let link = CADisplayLink(target: self, selector: #selector(displayLinkTick(_:)))
+            link.add(to: .main, forMode: .common)
+            displayLink = link
             
             print("✅ FPSTracker запущен")
         } else {
@@ -65,7 +62,7 @@ final class FPSTracker {
     func stop() {
         #if canImport(UIKit) && !targetEnvironment(macCatalyst)
         if #available(iOS 15.0, *) {
-            displayLink?.invalidate()
+            (displayLink as? CADisplayLink)?.invalidate()
             displayLink = nil
             fps = 0
             frameCount = 0

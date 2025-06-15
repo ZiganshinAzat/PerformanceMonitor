@@ -35,7 +35,7 @@ final class PerfomanceMonitorTests: XCTestCase {
         XCTAssertFalse(performanceMonitor.isRunning, "Мониторинг должен быть остановлен после stop()")
     }
     
-    func testDataCollection() {
+    @MainActor func testDataCollection() {
         performanceMonitor.start()
         
         // Принудительно собираем данные
@@ -55,7 +55,7 @@ final class PerfomanceMonitorTests: XCTestCase {
         }
     }
     
-    func testClearData() {
+    @MainActor func testClearData() {
         performanceMonitor.start()
         
         // Принудительно собираем данные
@@ -192,7 +192,7 @@ final class PerfomanceMonitorTests: XCTestCase {
         XCTAssertFalse(performanceMonitor.isRunning)
     }
     
-    func testGetCurrentMetricsWhenStopped() {
+    @MainActor func testGetCurrentMetricsWhenStopped() {
         XCTAssertFalse(performanceMonitor.isRunning)
         let metrics = performanceMonitor.getCurrentMetrics()
         XCTAssertNil(metrics, "Метрики должны быть nil когда мониторинг остановлен")
