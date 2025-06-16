@@ -2,6 +2,9 @@ import Foundation
 #if canImport(UIKit)
 import UIKit
 #endif
+#if canImport(CoreGraphics)
+import CoreGraphics
+#endif
 
 /// Генератор отчетов о производительности
 final class ReportGenerator {
@@ -10,7 +13,14 @@ final class ReportGenerator {
     
     private let fileManager = FileManager.default
     private lazy var documentsDirectory: URL = {
+        #if targetEnvironment(simulator)
+        // В симуляторе используем реальную папку Documents пользователя на Mac
+        let homeDirectory = FileManager.default.homeDirectoryForCurrentUser
+        return homeDirectory.appendingPathComponent("Documents")
+        #else
+        // На устройстве используем стандартную папку Documents приложения
         return fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+        #endif
     }()
     
     // MARK: - Public Methods
@@ -45,7 +55,13 @@ final class ReportGenerator {
             case .csv:
                 try generateCSVReport(analysis: analysis, rawData: rawData, to: url)
             case .pdf:
-                try generateTextReport(analysis: analysis, rawData: rawData, to: url)
+                // PDF генерация пока не поддерживается, создаем текстовый отчет
+                let textURL = url.deletingPathExtension().appendingPathExtension("txt")
+                try generateTextReport(analysis: analysis, rawData: rawData, to: textURL)
+                generatedURLs.append(textURL)
+                print("📄 Отчет создан: \(textURL.lastPathComponent) (текстовый формат)")
+                print("📁 Путь: \(textURL.path)")
+                continue
             }
             
             generatedURLs.append(url)
@@ -57,9 +73,14 @@ final class ReportGenerator {
         return generatedURLs
     }
     
-    // MARK: - Text Report Generation (вместо PDF)
+    // MARK: - Text Report Generation
     
     private func generateTextReport(analysis: PerformanceAnalysis, rawData: [PerformanceData], to url: URL) throws {
+        let content = generateReportContent(analysis: analysis, rawData: rawData)
+        try content.write(to: url, atomically: true, encoding: .utf8)
+    }
+    
+    private func generateReportContent(analysis: PerformanceAnalysis, rawData: [PerformanceData]) -> String {
         var content = """
         =====================================
         ОТЧЕТ О ПРОИЗВОДИТЕЛЬНОСТИ
@@ -136,7 +157,7 @@ final class ReportGenerator {
         =====================================
         """
         
-        try content.write(to: url, atomically: true, encoding: .utf8)
+        return content
     }
     
     // MARK: - JSON Generation
