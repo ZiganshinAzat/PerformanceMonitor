@@ -13,14 +13,8 @@ final class ReportGenerator {
     
     private let fileManager = FileManager.default
     private lazy var documentsDirectory: URL = {
-        #if targetEnvironment(simulator)
-        // В симуляторе используем реальную папку Documents пользователя на Mac
-        let homeDirectory = FileManager.default.homeDirectoryForCurrentUser
-        return homeDirectory.appendingPathComponent("Documents")
-        #else
-        // На устройстве используем стандартную папку Documents приложения
+        // Всегда используем стандартную папку Documents приложения для iOS
         return fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
-        #endif
     }()
     
     // MARK: - Public Methods
