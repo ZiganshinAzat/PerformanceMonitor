@@ -15,7 +15,7 @@ class BasicUsageExample {
         let customThresholds = PerformanceThresholds(
             cpuUsageWarning: 70.0,
             cpuUsageCritical: 90.0,
-            memoryUsageWarning: 200.0,
+            memoryUsageWarning: 250.0,
             memoryUsageCritical: 400.0,
             fpsWarning: 45.0,
             fpsCritical: 30.0,
