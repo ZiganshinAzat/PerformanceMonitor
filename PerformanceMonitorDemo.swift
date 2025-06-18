@@ -23,17 +23,17 @@ class PerformanceMonitorDemo {
         print("   - Медленные сетевые запросы")
         print()
         
-        // Настраиваем более чувствительные пороги для демонстрации
+        // Настраиваем очень чувствительные пороги для демонстрации большого количества аномалий
         let demoThresholds = PerformanceThresholds(
-            minFPS: 55.0,      // Высокий порог для FPS
-            maxCPU: 50.0,      // Низкий порог для CPU
-            maxMemory: 100.0,  // Низкий порог для памяти
-            maxNetworkDuration: 2.0, // Короткий порог для сети
-            memorySpikeFactor: 1.3   // Чувствительный порог для скачков памяти
+            minFPS: 58.0,      // Очень высокий порог для FPS - любое снижение будет аномалией
+            maxCPU: 30.0,      // Очень низкий порог для CPU - почти любая активность будет аномалией
+            maxMemory: 80.0,   // Очень низкий порог для памяти
+            maxNetworkDuration: 1.5, // Очень короткий порог для сети
+            memorySpikeFactor: 1.2   // Очень чувствительный порог для скачков памяти
         )
         
-        // Запускаем мониторинг с частым интервалом сбора данных
-        PerformanceMonitor.shared.start(interval: 0.5, thresholds: demoThresholds)
+        // Запускаем мониторинг с очень частым интервалом сбора данных для большего количества точек
+        PerformanceMonitor.shared.start(interval: 0.3, thresholds: demoThresholds)
         
         // Запускаем все типы аномалий с задержками
         DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
@@ -56,8 +56,21 @@ class PerformanceMonitorDemo {
             self.simulateSlowNetworkRequests()
         }
         
-        // Завершаем демонстрацию и генерируем отчет
+        // Повторяем циклы аномалий для большего количества данных
+        DispatchQueue.main.asyncAfter(deadline: .now() + 25.0) {
+            print("🔄 Запускаем второй цикл демонстрации для большего количества аномалий...")
+            self.simulateLowFPS()
+            self.simulateHighCPUUsage()
+            self.simulateHighMemoryUsage()
+        }
+        
         DispatchQueue.main.asyncAfter(deadline: .now() + 30.0) {
+            self.simulateMemorySpikes()
+            self.simulateSlowNetworkRequests()
+        }
+        
+        // Завершаем демонстрацию и генерируем отчет через больше времени
+        DispatchQueue.main.asyncAfter(deadline: .now() + 45.0) {
             self.finishDemo()
         }
     }
@@ -83,20 +96,22 @@ class PerformanceMonitorDemo {
     private func simulateLowFPS() {
         print("🎮 Начинаем симуляцию низкого FPS...")
         
-        // Создаем тяжелые вычисления на главном потоке
-        timer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
-            // Блокируем главный поток на 50-100ms
-            let blockTime = Double.random(in: 0.05...0.1)
+        // Создаем очень тяжелые вычисления на главном потоке для большего количества аномалий FPS
+        timer = Timer.scheduledTimer(withTimeInterval: 0.05, repeats: true) { _ in
+            // Блокируем главный поток на 80-150ms для гарантированного падения FPS
+            let blockTime = Double.random(in: 0.08...0.15)
             let endTime = CFAbsoluteTimeGetCurrent() + blockTime
             
             while CFAbsoluteTimeGetCurrent() < endTime {
-                // Бесполезные вычисления для блокировки потока
-                _ = sin(Double.random(in: 0...1000)) * cos(Double.random(in: 0...1000))
+                // Более интенсивные вычисления для блокировки потока
+                for i in 0..<1000 {
+                    _ = sin(Double(i)) * cos(Double(i)) * tan(Double(i)) * log(Double(i + 1))
+                }
             }
         }
         
-        // Останавливаем через 3 секунды
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+        // Увеличиваем время симуляции для большего количества аномалий
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
             self.timer?.invalidate()
             self.timer = nil
             print("✅ Симуляция низкого FPS завершена")
@@ -107,20 +122,20 @@ class PerformanceMonitorDemo {
     private func simulateHighCPUUsage() {
         print("⚡ Начинаем симуляцию высокой загрузки CPU...")
         
-        // Запускаем несколько фоновых задач с интенсивными вычислениями
-        for i in 0..<4 {
+        // Запускаем больше фоновых задач с очень интенсивными вычислениями
+        for i in 0..<8 {
             DispatchQueue.global(qos: .userInitiated).async {
-                let endTime = CFAbsoluteTimeGetCurrent() + 3.0
+                let endTime = CFAbsoluteTimeGetCurrent() + 6.0
                 
                 while CFAbsoluteTimeGetCurrent() < endTime {
-                    // Интенсивные математические вычисления
+                    // Очень интенсивные математические вычисления
                     var result = 0.0
-                    for j in 0..<10000 {
-                        result += sin(Double(j)) * cos(Double(j)) * tan(Double(j))
+                    for j in 0..<50000 {
+                        result += sin(Double(j)) * cos(Double(j)) * tan(Double(j)) * sqrt(Double(j + 1))
                     }
                     
-                    // Маленькая пауза чтобы не заблокировать устройство полностью
-                    Thread.sleep(forTimeInterval: 0.001)
+                    // Убираем паузы для максимальной нагрузки CPU
+                    // Thread.sleep(forTimeInterval: 0.001)
                 }
                 
                 if i == 0 {
@@ -136,18 +151,18 @@ class PerformanceMonitorDemo {
     private func simulateHighMemoryUsage() {
         print("💾 Начинаем симуляцию высокого потребления памяти...")
         
-        // Постепенно выделяем большие блоки памяти
-        heavyComputationTimer = Timer.scheduledTimer(withTimeInterval: 0.2, repeats: true) { _ in
-            // Создаем блок данных по 10MB
-            let dataSize = 10 * 1024 * 1024 // 10 MB
+        // Очень агрессивно выделяем большие блоки памяти
+        heavyComputationTimer = Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { _ in
+            // Создаем блоки данных по 15MB для быстрого роста памяти
+            let dataSize = 15 * 1024 * 1024 // 15 MB
             let data = Data(count: dataSize)
             self.memoryHogArray.append(data)
             
-            print("📈 Выделено еще 10MB памяти (всего: \(self.memoryHogArray.count * 10)MB)")
+            print("📈 Выделено еще 15MB памяти (всего: \(self.memoryHogArray.count * 15)MB)")
         }
         
-        // Останавливаем через 3 секунды
-        DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+        // Увеличиваем время симуляции для большего количества аномалий
+        DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
             self.heavyComputationTimer?.invalidate()
             self.heavyComputationTimer = nil
             print("✅ Симуляция высокого потребления памяти завершена")
@@ -161,22 +176,22 @@ class PerformanceMonitorDemo {
         var spikeCount = 0
         
         func createMemorySpike() {
-            guard spikeCount < 3 else {
+            guard spikeCount < 8 else {
                 print("✅ Симуляция скачков памяти завершена")
                 return
             }
             
             spikeCount += 1
             
-            // Резко выделяем большой блок памяти
-            let spikeSize = 50 * 1024 * 1024 // 50 MB
+            // Резко выделяем очень большой блок памяти
+            let spikeSize = 80 * 1024 * 1024 // 80 MB
             let spikeData = Data(count: spikeSize)
             memoryHogArray.append(spikeData)
             
-            print("🔥 Скачок памяти #\(spikeCount): выделено 50MB")
+            print("🔥 Скачок памяти #\(spikeCount): выделено 80MB")
             
-            // Планируем следующий скачок через 1 секунду
-            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) {
+            // Планируем следующий скачок через меньший интервал для большего количества скачков
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                 createMemorySpike()
             }
         }
@@ -189,9 +204,14 @@ class PerformanceMonitorDemo {
         print("🌐 Начинаем симуляцию медленных сетевых запросов...")
         
         let urls = [
+            "https://httpbin.org/delay/2",  // 2 секунды задержки
             "https://httpbin.org/delay/3",  // 3 секунды задержки
             "https://httpbin.org/delay/4",  // 4 секунды задержки
             "https://httpbin.org/delay/5",  // 5 секунд задержки
+            "https://httpbin.org/delay/2",  // Еще один 2-секундный запрос
+            "https://httpbin.org/delay/3",  // Еще один 3-секундный запрос
+            "https://httpbin.org/delay/6",  // 6 секунд задержки для критически медленного запроса
+            "https://httpbin.org/delay/7",  // 7 секунд задержки
         ]
         
         for (index, urlString) in urls.enumerated() {
@@ -266,7 +286,7 @@ class PerformanceMonitorDemo {
         }
         
         // Генерируем отчеты
-        PerformanceMonitor.shared.generateReport(formats: [.json, .csv]) { result in
+        PerformanceMonitor.shared.generateReport() { result in
             DispatchQueue.main.async {
                 switch result {
                 case .success(let urls):

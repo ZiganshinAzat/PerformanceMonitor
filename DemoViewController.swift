@@ -3,12 +3,15 @@ import PerformanceMonitor
 
 class DemoViewController: UIViewController {
     
-    @IBOutlet weak var statusLabel: UILabel!
-    @IBOutlet weak var metricsLabel: UILabel!
-    @IBOutlet weak var startDemoButton: UIButton!
-    @IBOutlet weak var stopDemoButton: UIButton!
-    @IBOutlet weak var testSpecificButton: UIButton!
-    @IBOutlet weak var currentMetricsButton: UIButton!
+    // UI элементы создаются программно
+    private let statusLabel = UILabel()
+    private let metricsLabel = UILabel()
+    private let startDemoButton = UIButton(type: .system)
+    private let stopDemoButton = UIButton(type: .system)
+    private let testSpecificButton = UIButton(type: .system)
+    private let currentMetricsButton = UIButton(type: .system)
+    private let scrollView = UIScrollView()
+    private let contentView = UIView()
     
     private let demo = PerformanceMonitorDemo()
     private var metricsTimer: Timer?
@@ -16,28 +19,148 @@ class DemoViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupUI()
+        setupConstraints()
         startMetricsDisplay()
     }
     
     private func setupUI() {
         title = "PerformanceMonitor Demo"
+        view.backgroundColor = .systemBackground
         
-        // Настройка кнопок
-        startDemoButton.setTitle("🚀 Запустить полную демонстрацию", for: .normal)
-        stopDemoButton.setTitle("🛑 Остановить демонстрацию", for: .normal)
-        testSpecificButton.setTitle("🧪 Тестировать низкий FPS", for: .normal)
-        currentMetricsButton.setTitle("📊 Показать текущие метрики", for: .normal)
+        // Настройка scroll view
+        scrollView.translatesAutoresizingMaskIntoConstraints = false
+        contentView.translatesAutoresizingMaskIntoConstraints = false
+        view.addSubview(scrollView)
+        scrollView.addSubview(contentView)
         
-        // Настройка лейблов
+        // Настройка статус лейбла
         statusLabel.text = "Готов к демонстрации"
         statusLabel.numberOfLines = 0
         statusLabel.textAlignment = .center
+        statusLabel.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        statusLabel.textColor = .label
+        statusLabel.translatesAutoresizingMaskIntoConstraints = false
         
+        // Настройка лейбла метрик
         metricsLabel.text = "Метрики будут отображаться здесь"
         metricsLabel.numberOfLines = 0
         metricsLabel.font = UIFont.monospacedSystemFont(ofSize: 12, weight: .regular)
+        metricsLabel.textColor = .secondaryLabel
+        metricsLabel.backgroundColor = .secondarySystemBackground
+        metricsLabel.layer.cornerRadius = 8
+        metricsLabel.layer.masksToBounds = true
+        metricsLabel.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Добавляем отступы для лейбла метрик
+        let metricsContainer = UIView()
+        metricsContainer.backgroundColor = .secondarySystemBackground
+        metricsContainer.layer.cornerRadius = 8
+        metricsContainer.translatesAutoresizingMaskIntoConstraints = false
+        metricsContainer.addSubview(metricsLabel)
+        
+        // Настройка кнопок
+        setupButton(startDemoButton, title: "🚀 Запустить полную демонстрацию", backgroundColor: .systemBlue)
+        setupButton(stopDemoButton, title: "🛑 Остановить демонстрацию", backgroundColor: .systemRed)
+        setupButton(testSpecificButton, title: "🧪 Тестировать аномалии", backgroundColor: .systemOrange)
+        setupButton(currentMetricsButton, title: "📊 Показать анализ", backgroundColor: .systemGreen)
         
         stopDemoButton.isEnabled = false
+        
+        // Добавляем элементы в contentView
+        contentView.addSubview(statusLabel)
+        contentView.addSubview(metricsContainer)
+        contentView.addSubview(startDemoButton)
+        contentView.addSubview(stopDemoButton)
+        contentView.addSubview(testSpecificButton)
+        contentView.addSubview(currentMetricsButton)
+        
+        // Настройка constraints для metricsLabel внутри контейнера
+        NSLayoutConstraint.activate([
+            metricsLabel.topAnchor.constraint(equalTo: metricsContainer.topAnchor, constant: 12),
+            metricsLabel.leadingAnchor.constraint(equalTo: metricsContainer.leadingAnchor, constant: 12),
+            metricsLabel.trailingAnchor.constraint(equalTo: metricsContainer.trailingAnchor, constant: -12),
+            metricsLabel.bottomAnchor.constraint(equalTo: metricsContainer.bottomAnchor, constant: -12)
+        ])
+        
+        // Сохраняем ссылку на metricsContainer для constraints
+        metricsContainer.tag = 999
+        
+        // Добавляем действия для кнопок
+        startDemoButton.addTarget(self, action: #selector(startFullDemo), for: .touchUpInside)
+        stopDemoButton.addTarget(self, action: #selector(stopDemo), for: .touchUpInside)
+        testSpecificButton.addTarget(self, action: #selector(testSpecificAnomaly), for: .touchUpInside)
+        currentMetricsButton.addTarget(self, action: #selector(showCurrentMetrics), for: .touchUpInside)
+    }
+    
+    private func setupButton(_ button: UIButton, title: String, backgroundColor: UIColor) {
+        button.setTitle(title, for: .normal)
+        button.backgroundColor = backgroundColor
+        button.setTitleColor(.white, for: .normal)
+        button.setTitleColor(.lightGray, for: .disabled)
+        button.titleLabel?.font = UIFont.systemFont(ofSize: 16, weight: .medium)
+        button.layer.cornerRadius = 8
+        button.translatesAutoresizingMaskIntoConstraints = false
+        
+        // Добавляем тень
+        button.layer.shadowColor = UIColor.black.cgColor
+        button.layer.shadowOffset = CGSize(width: 0, height: 2)
+        button.layer.shadowOpacity = 0.1
+        button.layer.shadowRadius = 4
+    }
+    
+    private func setupConstraints() {
+        let metricsContainer = contentView.viewWithTag(999)!
+        
+        NSLayoutConstraint.activate([
+            // ScrollView constraints
+            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
+            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            
+            // ContentView constraints
+            contentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
+            contentView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
+            contentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
+            contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
+            contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
+            
+            // Status label constraints
+            statusLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 20),
+            statusLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            statusLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            
+            // Metrics container constraints
+            metricsContainer.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 20),
+            metricsContainer.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            metricsContainer.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            metricsContainer.heightAnchor.constraint(greaterThanOrEqualToConstant: 200),
+            
+            // Start demo button constraints
+            startDemoButton.topAnchor.constraint(equalTo: metricsContainer.bottomAnchor, constant: 30),
+            startDemoButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            startDemoButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            startDemoButton.heightAnchor.constraint(equalToConstant: 50),
+            
+            // Stop demo button constraints
+            stopDemoButton.topAnchor.constraint(equalTo: startDemoButton.bottomAnchor, constant: 15),
+            stopDemoButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            stopDemoButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            stopDemoButton.heightAnchor.constraint(equalToConstant: 50),
+            
+            // Test specific button constraints
+            testSpecificButton.topAnchor.constraint(equalTo: stopDemoButton.bottomAnchor, constant: 15),
+            testSpecificButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            testSpecificButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            testSpecificButton.heightAnchor.constraint(equalToConstant: 50),
+            
+            // Current metrics button constraints
+            currentMetricsButton.topAnchor.constraint(equalTo: testSpecificButton.bottomAnchor, constant: 15),
+            currentMetricsButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 20),
+            currentMetricsButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -20),
+            currentMetricsButton.heightAnchor.constraint(equalToConstant: 50),
+            currentMetricsButton.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -30)
+        ])
     }
     
     private func startMetricsDisplay() {
@@ -68,36 +191,52 @@ class DemoViewController: UIViewController {
             
             metricsLabel.text = metricsText
         } else {
-            metricsLabel.text = "PerformanceMonitor не активен"
+            metricsLabel.text = "PerformanceMonitor не активен\n\nНажмите одну из кнопок ниже\nчтобы запустить демонстрацию"
         }
     }
     
     // MARK: - Actions
     
-    @IBAction func startFullDemo(_ sender: UIButton) {
+    @objc private func startFullDemo() {
         statusLabel.text = "🚀 Запускается полная демонстрация...\nБудут показаны все типы аномалий"
         
         startDemoButton.isEnabled = false
         stopDemoButton.isEnabled = true
         
+        // Анимация кнопки
+        UIView.animate(withDuration: 0.3) {
+            self.startDemoButton.alpha = 0.5
+            self.stopDemoButton.alpha = 1.0
+        }
+        
         demo.startFullDemo()
         
-        // Через 35 секунд включаем кнопку обратно
-        DispatchQueue.main.asyncAfter(deadline: .now() + 35.0) {
+        // Через 50 секунд включаем кнопку обратно (увеличенное время для более интенсивной демонстрации)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 50.0) {
             self.startDemoButton.isEnabled = true
             self.stopDemoButton.isEnabled = false
             self.statusLabel.text = "✅ Демонстрация завершена! Проверьте консоль для подробностей"
+            
+            UIView.animate(withDuration: 0.3) {
+                self.startDemoButton.alpha = 1.0
+                self.stopDemoButton.alpha = 0.5
+            }
         }
     }
     
-    @IBAction func stopDemo(_ sender: UIButton) {
+    @objc private func stopDemo() {
         demo.stopDemo()
         startDemoButton.isEnabled = true
         stopDemoButton.isEnabled = false
         statusLabel.text = "🛑 Демонстрация остановлена"
+        
+        UIView.animate(withDuration: 0.3) {
+            self.startDemoButton.alpha = 1.0
+            self.stopDemoButton.alpha = 0.5
+        }
     }
     
-    @IBAction func testSpecificAnomaly(_ sender: UIButton) {
+    @objc private func testSpecificAnomaly() {
         let alert = UIAlertController(
             title: "Выберите тип аномалии для тестирования",
             message: nil,
@@ -117,10 +256,16 @@ class DemoViewController: UIViewController {
         
         alert.addAction(UIAlertAction(title: "Отмена", style: .cancel))
         
+        // Для iPad
+        if let popover = alert.popoverPresentationController {
+            popover.sourceView = testSpecificButton
+            popover.sourceRect = testSpecificButton.bounds
+        }
+        
         present(alert, animated: true)
     }
     
-    @IBAction func showCurrentMetrics(_ sender: UIButton) {
+    @objc private func showCurrentMetrics() {
         if PerformanceMonitor.shared.isRunning {
             let analysis = PerformanceMonitor.shared.getPerformanceAnalysis()
             
@@ -146,7 +291,7 @@ class DemoViewController: UIViewController {
             statusLabel.text = "▶️ Базовый мониторинг запущен"
             
             DispatchQueue.main.asyncAfter(deadline: .now() + 5.0) {
-                self.showCurrentMetrics(sender)
+                self.showCurrentMetrics()
             }
         }
     }
@@ -157,12 +302,22 @@ class DemoViewController: UIViewController {
         startDemoButton.isEnabled = false
         stopDemoButton.isEnabled = true
         
+        UIView.animate(withDuration: 0.3) {
+            self.startDemoButton.alpha = 0.5
+            self.stopDemoButton.alpha = 1.0
+        }
+        
         demo.testSpecificAnomaly(type)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + 12.0) {
             self.startDemoButton.isEnabled = true
             self.stopDemoButton.isEnabled = false
             self.statusLabel.text = "✅ Тест \(self.getDisplayName(for: type)) завершен"
+            
+            UIView.animate(withDuration: 0.3) {
+                self.startDemoButton.alpha = 1.0
+                self.stopDemoButton.alpha = 0.5
+            }
         }
     }
     
@@ -182,127 +337,3 @@ class DemoViewController: UIViewController {
         demo.stopDemo()
     }
 }
-
-// MARK: - Storyboard Setup
-/*
-Для использования этого ViewController в Storyboard:
-
-1. Создайте новый ViewController в Interface Builder
-2. Установите класс как DemoViewController
-3. Добавьте следующие UI элементы и подключите к аутлетам:
-   - UILabel для statusLabel (многострочный, по центру)
-   - UILabel для metricsLabel (многострочный, моноширинный шрифт)
-   - UIButton для startDemoButton
-   - UIButton для stopDemoButton
-   - UIButton для testSpecificButton
-   - UIButton для currentMetricsButton
-
-4. Подключите действия кнопок к соответствующим IBAction методам
-
-5. Добавьте Auto Layout ограничения для правильного отображения на всех устройствах
-*/
-
-// MARK: - Программное создание UI
-extension DemoViewController {
-    
-    /// Создает UI программно, если не используется Storyboard
-    func setupProgrammaticUI() {
-        view.backgroundColor = .systemBackground
-        
-        let scrollView = UIScrollView()
-        let contentView = UIView()
-        
-        // Настройка scroll view
-        scrollView.translatesAutoresizingMaskIntoConstraints = false
-        contentView.translatesAutoresizingMaskIntoConstraints = false
-        
-        view.addSubview(scrollView)
-        scrollView.addSubview(contentView)
-        
-        // Создание элементов UI
-        statusLabel = UILabel()
-        metricsLabel = UILabel()
-        startDemoButton = UIButton(type: .system)
-        stopDemoButton = UIButton(type: .system)
-        testSpecificButton = UIButton(type: .system)
-        currentMetricsButton = UIButton(type: .system)
-        
-        // Настройка элементов
-        [statusLabel, metricsLabel, startDemoButton, stopDemoButton, testSpecificButton, currentMetricsButton].forEach {
-            $0.translatesAutoresizingMaskIntoConstraints = false
-            contentView.addSubview($0)
-        }
-        
-        // Настройка кнопок
-        [startDemoButton, stopDemoButton, testSpecificButton, currentMetricsButton].forEach { button in
-            button.backgroundColor = .systemBlue
-            button.setTitleColor(.white, for: .normal)
-            button.layer.cornerRadius = 8
-            button.contentEdgeInsets = UIEdgeInsets(top: 12, left: 16, bottom: 12, right: 16)
-        }
-        
-        // Настройка лейблов
-        statusLabel.textAlignment = .center
-        statusLabel.numberOfLines = 0
-        statusLabel.font = .systemFont(ofSize: 16, weight: .medium)
-        
-        metricsLabel.numberOfLines = 0
-        metricsLabel.font = .monospacedSystemFont(ofSize: 12, weight: .regular)
-        metricsLabel.backgroundColor = .systemGray6
-        metricsLabel.layer.cornerRadius = 8
-        metricsLabel.layer.masksToBounds = true
-        
-        // Добавление действий
-        startDemoButton.addTarget(self, action: #selector(startFullDemo(_:)), for: .touchUpInside)
-        stopDemoButton.addTarget(self, action: #selector(stopDemo(_:)), for: .touchUpInside)
-        testSpecificButton.addTarget(self, action: #selector(testSpecificAnomaly(_:)), for: .touchUpInside)
-        currentMetricsButton.addTarget(self, action: #selector(showCurrentMetrics(_:)), for: .touchUpInside)
-        
-        // Auto Layout
-        NSLayoutConstraint.activate([
-            // Scroll View
-            scrollView.topAnchor.constraint(equalTo: view.safeAreaLayoutGuide.topAnchor),
-            scrollView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            scrollView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            scrollView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            
-            // Content View
-            contentView.topAnchor.constraint(equalTo: scrollView.topAnchor),
-            contentView.leadingAnchor.constraint(equalTo: scrollView.leadingAnchor),
-            contentView.trailingAnchor.constraint(equalTo: scrollView.trailingAnchor),
-            contentView.bottomAnchor.constraint(equalTo: scrollView.bottomAnchor),
-            contentView.widthAnchor.constraint(equalTo: scrollView.widthAnchor),
-            
-            // UI Elements
-            statusLabel.topAnchor.constraint(equalTo: contentView.topAnchor, constant: 20),
-            statusLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            statusLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            
-            startDemoButton.topAnchor.constraint(equalTo: statusLabel.bottomAnchor, constant: 20),
-            startDemoButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            startDemoButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            startDemoButton.heightAnchor.constraint(equalToConstant: 50),
-            
-            stopDemoButton.topAnchor.constraint(equalTo: startDemoButton.bottomAnchor, constant: 12),
-            stopDemoButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            stopDemoButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            stopDemoButton.heightAnchor.constraint(equalToConstant: 50),
-            
-            testSpecificButton.topAnchor.constraint(equalTo: stopDemoButton.bottomAnchor, constant: 12),
-            testSpecificButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            testSpecificButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            testSpecificButton.heightAnchor.constraint(equalToConstant: 50),
-            
-            currentMetricsButton.topAnchor.constraint(equalTo: testSpecificButton.bottomAnchor, constant: 12),
-            currentMetricsButton.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            currentMetricsButton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            currentMetricsButton.heightAnchor.constraint(equalToConstant: 50),
-            
-            metricsLabel.topAnchor.constraint(equalTo: currentMetricsButton.bottomAnchor, constant: 20),
-            metricsLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 16),
-            metricsLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -16),
-            metricsLabel.bottomAnchor.constraint(equalTo: contentView.bottomAnchor, constant: -20),
-            metricsLabel.heightAnchor.constraint(greaterThanOrEqualToConstant: 200)
-        ])
-    }
-} 

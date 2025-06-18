@@ -101,7 +101,7 @@ final class ReportGenerator {
             
             """
             
-            for (index, anomaly) in analysis.anomalies.prefix(20).enumerated() {
+            for (index, anomaly) in analysis.anomalies.enumerated() {
                 let timeString = DateFormatter.reportDisplay.string(from: anomaly.timestamp)
                 content += "\(index + 1). [\(timeString)] \(anomaly.description)"
                 if let screenName = anomaly.screenName {
