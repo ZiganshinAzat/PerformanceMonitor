@@ -154,6 +154,11 @@ public final class PerformanceMonitor {
         return reportGenerator.documentsPath
     }
     
+    /// Возвращает анализ производительности
+    public func getPerformanceAnalysis() -> PerformanceAnalysis {
+        return dataAnalyzer.analyze(data: performanceData, thresholds: thresholds)
+    }
+    
     // MARK: - Private Methods
     
     private func setupDelegates() {

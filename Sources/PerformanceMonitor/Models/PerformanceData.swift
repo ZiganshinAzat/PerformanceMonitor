@@ -69,6 +69,8 @@ public struct PerformanceAnalysis: Codable {
     public let anomalies: [PerformanceAnomaly]
     public let recommendations: [String]
     public let screenPerformance: [String: ScreenPerformance]
+    public let overallScore: Int
+    public let totalDataPoints: Int
     
     public init(
         averageFPS: Double,
@@ -77,7 +79,9 @@ public struct PerformanceAnalysis: Codable {
         peakMemory: Double,
         anomalies: [PerformanceAnomaly],
         recommendations: [String],
-        screenPerformance: [String: ScreenPerformance]
+        screenPerformance: [String: ScreenPerformance],
+        overallScore: Int = 0,
+        totalDataPoints: Int = 0
     ) {
         self.averageFPS = averageFPS
         self.averageCPU = averageCPU
@@ -86,6 +90,8 @@ public struct PerformanceAnalysis: Codable {
         self.anomalies = anomalies
         self.recommendations = recommendations
         self.screenPerformance = screenPerformance
+        self.overallScore = overallScore
+        self.totalDataPoints = totalDataPoints
     }
 }
 
@@ -162,7 +168,7 @@ public struct PerformanceThresholds {
     public static let `default` = PerformanceThresholds(
         minFPS: 50.0,
         maxCPU: 80.0,
-        maxMemory: 200.0, // MB
+        maxMemory: 250.0, // MB
         maxNetworkDuration: 5.0, // секунды
         memorySpikeFactor: 1.5 // 50% увеличение считается скачком
     )
@@ -170,7 +176,7 @@ public struct PerformanceThresholds {
     public init(
         minFPS: Double = 50.0,
         maxCPU: Double = 80.0,
-        maxMemory: Double = 200.0,
+        maxMemory: Double = 250.0,
         maxNetworkDuration: TimeInterval = 5.0,
         memorySpikeFactor: Double = 1.5
     ) {

@@ -19,7 +19,9 @@ final class DataAnalyzer {
                 peakMemory: 0,
                 anomalies: [],
                 recommendations: ["Нет данных для анализа"],
-                screenPerformance: [:]
+                screenPerformance: [:],
+                overallScore: 0,
+                totalDataPoints: 0
             )
         }
         
@@ -45,6 +47,15 @@ final class DataAnalyzer {
         // Анализируем производительность по экранам
         let screenPerformance = analyzeScreenPerformance(data: data, thresholds: thresholds)
         
+        // Вычисляем общую оценку производительности (0-100)
+        let overallScore = calculateOverallScore(
+            averageFPS: averageFPS,
+            averageCPU: averageCPU,
+            averageMemory: averageMemory,
+            anomalies: anomalies,
+            thresholds: thresholds
+        )
+        
         return PerformanceAnalysis(
             averageFPS: averageFPS,
             averageCPU: averageCPU,
@@ -52,7 +63,9 @@ final class DataAnalyzer {
             peakMemory: peakMemory,
             anomalies: anomalies,
             recommendations: recommendations,
-            screenPerformance: screenPerformance
+            screenPerformance: screenPerformance,
+            overallScore: overallScore,
+            totalDataPoints: data.count
         )
     }
     
@@ -248,6 +261,31 @@ final class DataAnalyzer {
         }
         
         return screenPerformance
+    }
+    
+    private func calculateOverallScore(
+        averageFPS: Double,
+        averageCPU: Double,
+        averageMemory: Double,
+        anomalies: [PerformanceAnomaly],
+        thresholds: PerformanceThresholds
+    ) -> Int {
+        var score = 100
+        
+        // Штрафы за метрики
+        let fpsScore = min(100, Int((averageFPS / thresholds.minFPS) * 100))
+        let cpuScore = max(0, 100 - Int((averageCPU / thresholds.maxCPU) * 100))
+        let memoryScore = max(0, 100 - Int((averageMemory / thresholds.maxMemory) * 100))
+        
+        // Средневзвешенная оценка базовых метрик
+        let baseScore = Int((Double(fpsScore) * 0.4 + Double(cpuScore) * 0.3 + Double(memoryScore) * 0.3))
+        
+        // Штрафы за аномалии
+        let anomalyPenalty = min(50, anomalies.count * 5) // До 50 баллов штрафа за аномалии
+        
+        score = max(0, baseScore - anomalyPenalty)
+        
+        return score
     }
 }
 

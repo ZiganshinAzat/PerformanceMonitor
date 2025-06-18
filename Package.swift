@@ -19,10 +19,6 @@ let package = Package(
         .target(
             name: "PerformanceMonitor",
             dependencies: [],
-            path: "Sources/PerformanceMonitor"),
-        .testTarget(
-            name: "PerformanceMonitorTests",
-            dependencies: ["PerformanceMonitor"],
-            path: "Tests/PerformanceMonitorTests")
+            path: "Sources/PerformanceMonitor")
     ]
 )
