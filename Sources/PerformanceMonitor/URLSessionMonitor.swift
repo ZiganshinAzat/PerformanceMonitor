@@ -30,7 +30,6 @@ public final class URLSessionMonitor: NSObject {
     public func disable() {
         guard isEnabled else { return }
         isEnabled = false
-        // В реальной реализации здесь был бы unswizzle
         print("🛑 URLSessionMonitor выключен")
     }
     
@@ -59,44 +58,36 @@ public final class URLSessionMonitor: NSObject {
     internal func recordRequest(_ request: NetworkRequestData) {
         capturedRequests.append(request)
         
-        // Ограничиваем количество сохраненных запросов
         if capturedRequests.count > maxRequestsCount {
             capturedRequests.removeFirst(capturedRequests.count - maxRequestsCount)
         }
         
         delegate?.urlSessionMonitor(self, didCaptureRequest: request)
         
-        // Анализируем эффективность запроса
         analyzeRequestEfficiency(request)
     }
     
     // MARK: - Private Methods
     
     private func swizzleURLSessionMethods() {
-        // В реальной реализации здесь был бы method swizzling
-        // для перехвата URLSession.dataTask методов
         print("🔧 URLSession методы настроены для мониторинга")
     }
     
     private func analyzeRequestEfficiency(_ request: NetworkRequestData) {
         var issues: [String] = []
         
-        // Проверяем время отклика
         if request.duration > 5.0 {
             issues.append("Медленный запрос (>\(request.duration)с)")
         }
         
-        // Проверяем размер ответа
         if request.responseSize > 5 * 1024 * 1024 { // 5MB
             issues.append("Большой ответ (\(request.responseSize / 1024 / 1024)MB)")
         }
         
-        // Проверяем статус код
         if let statusCode = request.statusCode, statusCode >= 400 {
             issues.append("Ошибка HTTP \(statusCode)")
         }
         
-        // Логируем проблемы
         if !issues.isEmpty {
             print("⚠️ Проблемы с запросом \(request.url):")
             issues.forEach { print("   • \($0)") }
@@ -131,7 +122,6 @@ extension URLSessionMonitor: URLSessionDelegate, URLSessionTaskDelegate {
     public func urlSession(_ session: URLSession, task: URLSessionTask, didFinishCollecting metrics: URLSessionTaskMetrics) {
         guard isEnabled else { return }
         
-        // Используем URLSessionTaskMetrics для более точных данных
         for transactionMetric in metrics.transactionMetrics {
             let requestStartTime = transactionMetric.requestStartDate ?? Date()
             let responseEndTime = transactionMetric.responseEndDate ?? Date()
@@ -213,5 +203,5 @@ public struct NetworkEfficiencyStats {
     public let largeRequests: Int
     public let averageResponseTime: Double
     public let totalDataTransferred: Int64
-    public let efficiencyScore: Double // 0.0 - 1.0, где 1.0 = максимальная эффективность
+    public let efficiencyScore: Double
 } 

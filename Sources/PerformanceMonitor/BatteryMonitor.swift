@@ -36,7 +36,7 @@ public final class BatteryMonitor {
         #if canImport(UIKit)
         return UIDevice.current.batteryLevel
         #else
-        return 1.0 // На macOS возвращаем заглушку
+        return 1.0
         #endif
     }
     
@@ -71,10 +71,8 @@ public final class BatteryMonitor {
         isMonitoring = true
         
         #if canImport(UIKit)
-        // Включаем мониторинг батареи на устройстве
         UIDevice.current.isBatteryMonitoringEnabled = true
         
-        // Подписываемся на уведомления
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(batteryLevelDidChange),
@@ -90,7 +88,6 @@ public final class BatteryMonitor {
         )
         #endif
         
-        // Записываем начальное состояние
         recordCurrentBatteryState()
         
         print("✅ BatteryMonitor запущен")
@@ -144,18 +141,14 @@ public final class BatteryMonitor {
         
         batteryHistory.append(snapshot)
         
-        // Ограничиваем размер истории
         if batteryHistory.count > maxHistoryCount {
             batteryHistory.removeFirst(batteryHistory.count - maxHistoryCount)
         }
         
-        // Анализируем потребление
         analyzeBatteryConsumption(snapshot)
         
-        // Уведомляем делегата
         delegate?.batteryMonitor(self, didRecordSnapshot: snapshot)
         
-        // Обновляем последние значения
         lastBatteryLevel = snapshot.level
         lastBatteryState = snapshot.state
     }
@@ -167,11 +160,10 @@ public final class BatteryMonitor {
         let timeDiff = snapshot.timestamp.timeIntervalSince(previousSnapshot.timestamp)
         let levelDiff = previousSnapshot.level - snapshot.level
         
-        // Проверяем на быстрый разряд (более 5% в минуту)
         if timeDiff > 0 && levelDiff > 0 {
             let drainRatePerMinute = (levelDiff / Float(timeDiff)) * 60
             
-            if drainRatePerMinute > 0.05 { // 5% в минуту
+            if drainRatePerMinute > 0.05 {
                 let warning = "⚠️ Быстрый разряд батареи: \(String(format: "%.1f", drainRatePerMinute * 100))%/мин"
                 print(warning)
                 delegate?.batteryMonitor(self, didDetectFastDrain: drainRatePerMinute)
@@ -199,11 +191,9 @@ public final class BatteryMonitor {
         
         let drainRatePerHour = totalTime > 0 ? (totalDrain / Float(totalTime)) * 3600 : 0
         
-        // Рассчитываем время до полного разряда
-        let timeToEmpty: TimeInterval? = drainRatePerHour > 0 ? 
+        let timeToEmpty: TimeInterval? = drainRatePerHour > 0 ?
             TimeInterval(last.level / drainRatePerHour * 3600) : nil
         
-        // Анализируем время зарядки
         let chargingSnapshots = batteryHistory.filter { $0.state == .charging }
         var chargingTime: TimeInterval? = nil
         
@@ -248,8 +238,8 @@ public struct BatterySnapshot: Codable {
 public struct EnergyConsumptionStats {
     public let totalDrainPercent: Float
     public let averageDrainRatePerHour: Float
-    public let timeToEmpty: TimeInterval? // секунды до полного разряда
-    public let chargingTime: TimeInterval? // время последней зарядки
+    public let timeToEmpty: TimeInterval?
+    public let chargingTime: TimeInterval?
     public let isCharging: Bool
     public let currentLevel: Float
     
@@ -257,7 +247,6 @@ public struct EnergyConsumptionStats {
     public var efficiencyScore: Double {
         guard averageDrainRatePerHour > 0 else { return 1.0 }
         
-        // Считаем эффективным разряд менее 10% в час
         let normalDrainRate: Float = 0.10
         let efficiency = min(1.0, normalDrainRate / averageDrainRatePerHour)
         return Double(efficiency)

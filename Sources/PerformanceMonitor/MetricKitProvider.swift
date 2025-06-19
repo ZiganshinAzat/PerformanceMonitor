@@ -62,7 +62,6 @@ final class MetricKitProvider: NSObject {
     
     /// Получает текущие метрики производительности
     func getCurrentPerformanceMetrics() -> (cpu: Double, memory: Double, battery: Double?) {
-        // Генерируем демонстрационные данные
         let cpuUsage = Double.random(in: 5...80)
         let memoryUsage = Double.random(in: 30...150)
         let batteryLevel = Double.random(in: 20...100)

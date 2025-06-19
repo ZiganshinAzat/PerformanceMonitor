@@ -25,16 +25,13 @@ final class DataAnalyzer {
             )
         }
         
-        // Вычисляем средние значения
         let averageFPS = data.map { $0.fps }.reduce(0, +) / Double(data.count)
         let averageCPU = data.map { $0.cpuUsage }.reduce(0, +) / Double(data.count)
         let averageMemory = data.map { $0.memoryUsage }.reduce(0, +) / Double(data.count)
         let peakMemory = data.map { $0.memoryUsage }.max() ?? 0
         
-        // Выявляем аномалии
         let anomalies = detectAnomalies(data: data, thresholds: thresholds)
         
-        // Генерируем рекомендации
         let recommendations = generateRecommendations(
             averageFPS: averageFPS,
             averageCPU: averageCPU,
@@ -44,10 +41,8 @@ final class DataAnalyzer {
             thresholds: thresholds
         )
         
-        // Анализируем производительность по экранам
         let screenPerformance = analyzeScreenPerformance(data: data, thresholds: thresholds)
         
-        // Вычисляем общую оценку производительности (0-100)
         let overallScore = calculateOverallScore(
             averageFPS: averageFPS,
             averageCPU: averageCPU,
@@ -76,7 +71,6 @@ final class DataAnalyzer {
         var previousMemory: Double?
         
         for dataPoint in data {
-            // Проверяем FPS
             if dataPoint.fps < thresholds.minFPS {
                 anomalies.append(PerformanceAnomaly(
                     type: .lowFPS,
@@ -88,7 +82,6 @@ final class DataAnalyzer {
                 ))
             }
             
-            // Проверяем CPU
             if dataPoint.cpuUsage > thresholds.maxCPU {
                 anomalies.append(PerformanceAnomaly(
                     type: .highCPU,
@@ -100,7 +93,6 @@ final class DataAnalyzer {
                 ))
             }
             
-            // Проверяем память
             if dataPoint.memoryUsage > thresholds.maxMemory {
                 anomalies.append(PerformanceAnomaly(
                     type: .highMemory,
@@ -112,7 +104,6 @@ final class DataAnalyzer {
                 ))
             }
             
-            // Проверяем скачки памяти
             if let prevMemory = previousMemory {
                 let memoryIncrease = dataPoint.memoryUsage / prevMemory
                 if memoryIncrease > thresholds.memorySpikeFactor {
@@ -128,7 +119,6 @@ final class DataAnalyzer {
             }
             previousMemory = dataPoint.memoryUsage
             
-            // Проверяем медленные сетевые запросы
             for networkRequest in dataPoint.networkRequests {
                 if networkRequest.duration > thresholds.maxNetworkDuration {
                     anomalies.append(PerformanceAnomaly(
@@ -156,7 +146,6 @@ final class DataAnalyzer {
     ) -> [String] {
         var recommendations: [String] = []
         
-        // Рекомендации по FPS
         if averageFPS < thresholds.minFPS {
             recommendations.append("🎯 Оптимизируйте рендеринг: средний FPS (\(String(format: "%.1f", averageFPS))) ниже рекомендуемого")
             recommendations.append("• Уменьшите сложность анимаций")
@@ -164,15 +153,13 @@ final class DataAnalyzer {
             recommendations.append("• Используйте CALayer вместо UIView для сложной графики")
         }
         
-        // Рекомендации по CPU
-        if averageCPU > thresholds.maxCPU * 0.8 { // 80% от порога
+        if averageCPU > thresholds.maxCPU * 0.8 {
             recommendations.append("⚡ Оптимизируйте использование CPU: средняя загрузка (\(String(format: "%.1f", averageCPU))%) высокая")
             recommendations.append("• Перенесите тяжелые вычисления в фоновые очереди")
             recommendations.append("• Оптимизируйте алгоритмы обработки данных")
             recommendations.append("• Используйте ленивую загрузку для ресурсоемких операций")
         }
         
-        // Рекомендации по памяти
         if averageMemory > thresholds.maxMemory * 0.8 {
             recommendations.append("💾 Оптимизируйте использование памяти: среднее потребление (\(String(format: "%.1f", averageMemory)) MB) высокое")
             recommendations.append("• Освобождайте неиспользуемые ресурсы")
@@ -186,7 +173,6 @@ final class DataAnalyzer {
             recommendations.append("• Уменьшите размер кэшей")
         }
         
-        // Рекомендации по аномалиям
         let anomalyTypes = Set(anomalies.map { $0.type })
         
         if anomalyTypes.contains(.lowFPS) {
@@ -201,7 +187,6 @@ final class DataAnalyzer {
             recommendations.append("🌐 Обнаружены медленные сетевые запросы - оптимизируйте API или добавьте кэширование")
         }
         
-        // Общие рекомендации
         if recommendations.isEmpty {
             recommendations.append("✅ Производительность приложения в норме")
             recommendations.append("💡 Продолжайте мониторинг для поддержания качества")
@@ -217,7 +202,6 @@ final class DataAnalyzer {
         var screenData: [String: [PerformanceData]] = [:]
         var screenTimes: [String: (start: Date, end: Date?)] = [:]
         
-        // Группируем данные по экранам
         for dataPoint in data {
             guard let screenName = dataPoint.screenName else { continue }
             
@@ -239,7 +223,6 @@ final class DataAnalyzer {
             let averageCPU = screenDataPoints.map { $0.cpuUsage }.reduce(0, +) / Double(screenDataPoints.count)
             let averageMemory = screenDataPoints.map { $0.memoryUsage }.reduce(0, +) / Double(screenDataPoints.count)
             
-            // Вычисляем время, проведенное на экране
             let timeSpent: TimeInterval
             if let times = screenTimes[screenName], let endTime = times.end {
                 timeSpent = endTime.timeIntervalSince(times.start)
@@ -247,7 +230,6 @@ final class DataAnalyzer {
                 timeSpent = 0
             }
             
-            // Подсчитываем аномалии для этого экрана
             let screenAnomalies = detectAnomalies(data: screenDataPoints, thresholds: thresholds)
             
             screenPerformance[screenName] = ScreenPerformance(
@@ -272,16 +254,13 @@ final class DataAnalyzer {
     ) -> Int {
         var score = 100
         
-        // Штрафы за метрики
         let fpsScore = min(100, Int((averageFPS / thresholds.minFPS) * 100))
         let cpuScore = max(0, 100 - Int((averageCPU / thresholds.maxCPU) * 100))
         let memoryScore = max(0, 100 - Int((averageMemory / thresholds.maxMemory) * 100))
         
-        // Средневзвешенная оценка базовых метрик
         let baseScore = Int((Double(fpsScore) * 0.4 + Double(cpuScore) * 0.3 + Double(memoryScore) * 0.3))
         
-        // Штрафы за аномалии
-        let anomalyPenalty = min(50, anomalies.count * 5) // До 50 баллов штрафа за аномалии
+        let anomalyPenalty = min(50, anomalies.count * 5) 
         
         score = max(0, baseScore - anomalyPenalty)
         

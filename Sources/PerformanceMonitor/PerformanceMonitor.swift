@@ -48,14 +48,12 @@ public final class PerformanceMonitor {
         self.thresholds = thresholds
         isMonitoring = true
         
-        // Запускаем все трекеры
         fpsTracker.start()
         cpuTracker.start()
         metricKitProvider.start()
         networkMonitor.start()
         viewControllerTracker.start()
         
-        // Запускаем автоматический сбор метрик через DispatchQueue
         startMetricsCollection(interval: interval)
         
         print("✅ PerformanceMonitor запущен с интервалом \(interval)с")
@@ -70,14 +68,12 @@ public final class PerformanceMonitor {
         
         isMonitoring = false
         
-        // Останавливаем все трекеры
         fpsTracker.stop()
         cpuTracker.stop()
         metricKitProvider.stop()
         networkMonitor.stop()
         viewControllerTracker.stop()
         
-        // Останавливаем таймер
         monitoringTimer?.invalidate()
         monitoringTimer = nil
         
@@ -162,7 +158,6 @@ public final class PerformanceMonitor {
     // MARK: - Private Methods
     
     private func setupDelegates() {
-        // Настройка делегатов для получения данных от трекеров
         // networkMonitor.delegate = self // Заглушка
     }
     
@@ -174,7 +169,6 @@ public final class PerformanceMonitor {
                 self.collectMetrics()
             }
             
-            // Планируем следующий сбор
             self.startMetricsCollection(interval: interval)
         }
     }
@@ -193,14 +187,12 @@ public final class PerformanceMonitor {
         
         self.performanceData.append(metrics)
         
-        // Ограничиваем количество хранимых данных (последние 1000 записей)
         if self.performanceData.count > 1000 {
             self.performanceData.removeFirst(self.performanceData.count - 1000)
         }
     }
     
     private func getCurrentMemoryUsage() -> Double {
-        // Получаем реальное использование памяти
         var info = mach_task_basic_info()
         var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size)/4
         
@@ -215,10 +207,8 @@ public final class PerformanceMonitor {
         }
         
         if kerr == KERN_SUCCESS {
-            // Конвертируем байты в мегабайты
             return Double(info.resident_size) / (1024.0 * 1024.0)
         } else {
-            // Fallback - возвращаем случайное значение
             return Double.random(in: 100...300)
         }
     }
@@ -231,7 +221,7 @@ public final class PerformanceMonitor {
         if device.batteryLevel >= 0 {
             return Double(device.batteryLevel * 100)
         } else {
-            return nil // Батарея недоступна (например, на симуляторе)
+            return nil 
         }
         #else
         return nil

@@ -32,7 +32,6 @@ final class NetworkMonitor {
         
         isStarted = true
         
-        // Генерируем демонстрационные данные
         generateSampleRequests()
         
         print("✅ NetworkMonitor запущен с демонстрационными данными")
@@ -60,7 +59,6 @@ final class NetworkMonitor {
     internal func addNetworkRequest(_ request: NetworkRequestData) {
         networkRequests.append(request)
         
-        // Ограничиваем количество сохраненных запросов
         if networkRequests.count > maxRequestsCount {
             networkRequests.removeFirst(networkRequests.count - maxRequestsCount)
         }
@@ -131,7 +129,6 @@ final class NetworkMonitor {
         let averageResponseTime = networkRequests.reduce(0.0) { $0 + $1.duration } / Double(totalRequests)
         let totalDataTransferred = networkRequests.reduce(Int64(0)) { $0 + $1.requestSize + $1.responseSize }
         
-        // Находим самый частый домен
         let domains = networkRequests.compactMap { URL(string: $0.url)?.host }
         let domainCounts = Dictionary(grouping: domains, by: { $0 }).mapValues { $0.count }
         let mostFrequentDomain = domainCounts.max(by: { $0.value < $1.value })?.key

@@ -82,7 +82,6 @@ final class UIViewControllerTracker {
         let entry = (name: screenName, timestamp: Date())
         screenHistory.append(entry)
         
-        // Ограничиваем размер истории
         if screenHistory.count > maxHistoryCount {
             screenHistory.removeFirst(screenHistory.count - maxHistoryCount)
         }
@@ -104,15 +103,12 @@ final class UIViewControllerTracker {
             )
         }
         
-        // Подсчитываем уникальные экраны
         let uniqueScreens = Array(Set(history.map { $0.name }))
         
-        // Находим самый посещаемый экран
         let screenCounts = Dictionary(grouping: history, by: { $0.name })
             .mapValues { $0.count }
         let mostVisitedScreen = screenCounts.max(by: { $0.value < $1.value })?.key
         
-        // Вычисляем среднее время на экране
         var totalTime: TimeInterval = 0
         var screenCount = 0
         
@@ -128,7 +124,6 @@ final class UIViewControllerTracker {
         
         let averageTimePerScreen = screenCount > 0 ? totalTime / Double(screenCount) : 0
         
-        // Анализируем паттерны навигации
         let navigationPatterns = analyzeNavigationPatterns(from: history)
         
         return ScreenNavigationAnalysis(
@@ -211,10 +206,8 @@ final class UIViewControllerTracker {
 #if canImport(UIKit) && !targetEnvironment(macCatalyst)
 extension UIViewController {
     @objc func pm_viewDidAppear(_ animated: Bool) {
-        // Вызываем оригинальный метод
         pm_viewDidAppear(animated)
         
-        // Отслеживаем переход
         let screenName = String(describing: type(of: self))
         UIViewControllerTracker.shared?.trackScreenTransition(to: screenName)
     }

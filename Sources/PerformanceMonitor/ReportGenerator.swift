@@ -13,7 +13,6 @@ final class ReportGenerator {
     
     private let fileManager = FileManager.default
     private lazy var documentsDirectory: URL = {
-        // Всегда используем стандартную папку Documents приложения для iOS
         return fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
     }()
     
@@ -49,7 +48,6 @@ final class ReportGenerator {
             case .csv:
                 try generateCSVReport(analysis: analysis, rawData: rawData, to: url)
             case .pdf:
-                // PDF генерация пока не поддерживается, создаем текстовый отчет
                 let textURL = url.deletingPathExtension().appendingPathExtension("txt")
                 try generateTextReport(analysis: analysis, rawData: rawData, to: textURL)
                 generatedURLs.append(textURL)
@@ -93,7 +91,6 @@ final class ReportGenerator {
         
         """
         
-        // Аномалии
         if !analysis.anomalies.isEmpty {
             content += """
             ⚠️ ОБНАРУЖЕННЫЕ АНОМАЛИИ
@@ -112,7 +109,6 @@ final class ReportGenerator {
             content += "\n"
         }
         
-        // Рекомендации
         content += """
         💡 РЕКОМЕНДАЦИИ
         ===============
@@ -124,7 +120,6 @@ final class ReportGenerator {
         }
         content += "\n"
         
-        // Производительность по экранам
         if !analysis.screenPerformance.isEmpty {
             content += """
             📱 ПРОИЗВОДИТЕЛЬНОСТЬ ПО ЭКРАНАМ
@@ -221,7 +216,6 @@ private struct DeviceInfo: Codable {
     
     init() {
         #if canImport(UIKit)
-        // Используем заглушки для избежания проблем с @MainActor
         self.model = "iPhone"
         self.systemName = "iOS"
         self.systemVersion = "15.0"
